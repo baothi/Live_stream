@@ -1,0 +1,15 @@
+# ================================
+# .dockerignore
+# Khong copy cac file khong can thiet vao Docker image
+# ================================
+node_modules
+dist
+npm-debug.log
+.env
+.env.local
+.git
+.gitignore
+*.md
+Makefile
+docker-compose.yml
+.dockerignore

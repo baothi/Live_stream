@@ -1,0 +1,58 @@
+# ==========================================
+# Docker Compose - AI Meeting Translator
+# Backend + MongoDB
+# ==========================================
+
+services:
+  # ---- MongoDB ----
+  mongodb:
+    image: mongo:7
+    container_name: ai-translator-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: mongo_secret_123
+      MONGO_INITDB_DATABASE: ai-translator
+    ports:
+      - "27019:27017"    # 27017 va 27018 da bi chiem, dung 27019
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/init.js:ro
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---- NestJS Backend ----
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-translator-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      MONGODB_URI: mongodb://admin:mongo_secret_123@mongodb:27017/ai-translator?authSource=admin
+      JWT_SECRET: ${JWT_SECRET:-my-super-secret-key-for-dev-testing-12345678}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-your-key-here}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - app-network
+
+volumes:
+  mongo_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
